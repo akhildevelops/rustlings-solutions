@@ -1704,6 +1704,51 @@
       "contributions": [
         "content"
       ]
+    },
+    {
+      "login": "tkburis",
+      "name": "TK Buristrakul",
+      "avatar_url": "https://avatars.githubusercontent.com/u/20501289?v=4",
+      "profile": "https://github.com/tkburis",
+      "contributions": [
+        "content"
+      ]
+    },
+    {
+      "login": "HerschelW",
+      "name": "Kent Worthington",
+      "avatar_url": "https://avatars.githubusercontent.com/u/17935816?v=4",
+      "profile": "https://github.com/HerschelW",
+      "contributions": [
+        "content"
+      ]
+    },
+    {
+      "login": "seporterfield",
+      "name": "seporterfield",
+      "avatar_url": "https://avatars.githubusercontent.com/u/107010978?v=4",
+      "profile": "https://github.com/seporterfield",
+      "contributions": [
+        "content"
+      ]
+    },
+    {
+      "login": "dbarrosop",
+      "name": "David Barroso",
+      "avatar_url": "https://avatars.githubusercontent.com/u/6246622?v=4",
+      "profile": "https://www.linkedin.com/in/dbarrosop",
+      "contributions": [
+        "infra"
+      ]
+    },
+    {
+      "login": "tklauser",
+      "name": "Tobias Klauser",
+      "avatar_url": "https://avatars.githubusercontent.com/u/539708?v=4",
+      "profile": "https://distanz.ch",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 8,

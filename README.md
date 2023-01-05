@@ -1,6 +1,6 @@
 # Solutions to rustlings 🦀❤️
 
-## Solutions to [Rustlings exercises](https://github.com/rust-lang/rustlings) for latest release v5.2.1
+## Solutions to [Rustlings exercises](https://github.com/rust-lang/rustlings) for latest release v5.3.0
 
 ### Topic wise solutions:
 
@@ -42,7 +42,6 @@
 - [primitive_types4](exercises/primitive_types/primitive_types4.rs)
 - [primitive_types5](exercises/primitive_types/primitive_types5.rs)
 - [primitive_types6](exercises/primitive_types/primitive_types6.rs)
-
 
 ### **vecs**
 - [vecs1](exercises/vecs/vecs1.rs)
