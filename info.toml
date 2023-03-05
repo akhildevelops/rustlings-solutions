@@ -815,7 +815,7 @@ hint = """
 Step 1:
 We need to apply something to the collection `my_fav_fruits` before we start to go through
 it. What could that be? Take a look at the struct definition for a vector for inspiration:
-https://doc.rust-lang.org/std/vec/struct.Vec.html.
+https://doc.rust-lang.org/std/vec/struct.Vec.html
 Step 2 & step 3:
 Very similar to the lines above and below. You've got this!
 Step 4:
@@ -909,7 +909,7 @@ A challenge with multi-threaded applications is that the main thread can
 finish before the spawned threads are completed.
 https://doc.rust-lang.org/book/ch16-01-threads.html#waiting-for-all-threads-to-finish-using-join-handles
 
-Collect the JoinHandles and wait for them to finish.
+Use the JoinHandles to wait for each thread to finish and collect their results.
 https://doc.rust-lang.org/std/thread/struct.JoinHandle.html
 """
 
@@ -1010,11 +1010,11 @@ https://doc.rust-lang.org/stable/book/ch16-00-concurrency.html
 [[exercises]]
 name = "cow1"
 path = "exercises/smart_pointers/cow1.rs"
-mode = "compile"
+mode = "test"
 hint = """
-Since the vector is already owned, the `Cow` type doesn't need to clone it.
+If Cow already owns the data it doesn't need to clone it when to_mut() is called.
 
-Checkout https://doc.rust-lang.org/std/borrow/enum.Cow.html for documentation
+Check out https://doc.rust-lang.org/std/borrow/enum.Cow.html for documentation
 on the `Cow` type.
 """
 
@@ -1072,7 +1072,7 @@ name = "clippy1"
 path = "exercises/clippy/clippy1.rs"
 mode = "clippy"
 hint = """
-Rust stores the highest precision version of any long or inifinite precision
+Rust stores the highest precision version of any long or infinite precision
 mathematical constants in the Rust standard library.
 https://doc.rust-lang.org/stable/std/f32/consts/index.html
 

@@ -26,7 +26,7 @@ mod run;
 mod verify;
 
 // In sync with crate version
-const VERSION: &str = "5.3.0";
+const VERSION: &str = "5.4.0";
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// Rustlings is a collection of small exercises to get you used to writing and reading Rust code
@@ -350,7 +350,7 @@ fn watch(exercises: &[Exercise], verbose: bool) -> notify::Result<WatchStatus> {
     let (tx, rx) = channel();
     let should_quit = Arc::new(AtomicBool::new(false));
 
-    let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(2))?;
+    let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1))?;
     watcher.watch(Path::new("./exercises"), RecursiveMode::Recursive)?;
 
     clear_screen();
