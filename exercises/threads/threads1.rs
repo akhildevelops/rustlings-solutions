@@ -24,7 +24,7 @@ fn main() {
     for handle in handles {
         // TODO: a struct is returned from thread::spawn, can you use it?
         handle.join();
-        completed_threads += 1;
+        results.push(1);
     }
 
     if results.len() != 10 {
