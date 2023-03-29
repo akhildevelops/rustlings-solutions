@@ -137,13 +137,13 @@
 
 
 ### **standard_library_types**
-- [iterators1](exercises/standard_library_types/iterators1.rs)
-- [iterators2](exercises/standard_library_types/iterators2.rs)
-- [iterators3](exercises/standard_library_types/iterators3.rs)
-- [iterators4](exercises/standard_library_types/iterators4.rs)
-- [iterators5](exercises/standard_library_types/iterators5.rs)
-- [box1](exercises/standard_library_types/box1.rs)
-- [arc1](exercises/standard_library_types/arc1.rs)
+- [iterators1](exercises/iterators/iterators1.rs)
+- [iterators2](exercises/iterators/iterators2.rs)
+- [iterators3](exercises/iterators/iterators3.rs)
+- [iterators4](exercises/iterators/iterators4.rs)
+- [iterators5](exercises/iterators/iterators5.rs)
+- [box1](exercises/smart_pointers/box1.rs)
+- [arc1](exercises/smart_pointers/arc1.rs)
 
 
 ### **threads**
