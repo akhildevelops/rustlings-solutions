@@ -7,15 +7,14 @@
 // Execute `rustlings hint vecs2` or use the `hint` watch subcommand for a hint.
 
 fn vec_loop(mut v: Vec<i32>) -> Vec<i32> {
-    for i in v.iter_mut() {
-        *i = *i * 2
+    for element in v.iter_mut() {
+        *element = *element * 2
     }
-
     v
 }
 
 fn vec_map(v: &Vec<i32>) -> Vec<i32> {
-    v.iter().map(|num| num * 2).collect()
+    v.iter().map(|element| {element * 2}).collect()
 }
 
 #[cfg(test)]

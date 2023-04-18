@@ -30,10 +30,8 @@
 - [if1](exercises/if/if1.rs)
 - [if2](exercises/if/if2.rs)
 
-
 ### **quiz1**
 - [quiz1](exercises/quiz1.rs)
-
 
 ### **primitive_types**
 - [primitive_types1](exercises/primitive_types/primitive_types1.rs)
@@ -68,7 +66,6 @@
 - [enums2](exercises/enums/enums2.rs)
 - [enums3](exercises/enums/enums3.rs)
 
-
 ### **strings**
 - [strings1](exercises/strings/strings1.rs)
 - [strings2](exercises/strings/strings2.rs)
@@ -81,12 +78,10 @@
 - [modules2](exercises/modules/modules2.rs)
 - [modules3](exercises/modules/modules3.rs)
 
-
 ### **hashmaps**
 - [hashmaps1](exercises/hashmaps/hashmaps1.rs)
 - [hashmaps2](exercises/hashmaps/hashmaps2.rs)
 - [hashmaps3](exercises/hashmaps/hashmaps3.rs)
-
 
 ### **quiz2**
 - [quiz2](exercises/quiz2.rs)
@@ -163,7 +158,6 @@
 - [clippy1](exercises/clippy/clippy1.rs)
 - [clippy2](exercises/clippy/clippy2.rs)
 - [clippy3](exercises/clippy/clippy3.rs)
-
 
 ### **conversions**
 - [using_as](exercises/conversions/using_as.rs)
