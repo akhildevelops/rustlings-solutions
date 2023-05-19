@@ -51,13 +51,13 @@ mod tests {
     fn generate_alphabetic_report_card() {
         // TODO: Make sure to change the grade here after you finish the exercise.
         let report_card = ReportCard {
-            grade: 2.1,
+            grade: "A+",
             student_name: "Gary Plotter".to_string(),
             student_age: 11,
         };
         assert_eq!(
             report_card.print(),
-            "Gary Plotter (11) - achieved a grade of 2.1"
+            "Gary Plotter (11) - achieved a grade of A+"
         );
     }
 }
