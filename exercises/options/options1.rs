@@ -1,5 +1,7 @@
 // options1.rs
-// Execute `rustlings hint options1` or use the `hint` watch subcommand for a hint.
+//
+// Execute `rustlings hint options1` or use the `hint` watch subcommand for a
+// hint.
 
 // This function returns how much icecream there is left in the fridge.
 // If it's before 10PM, there's 5 pieces left. At 10PM, someone eats them
@@ -31,7 +33,8 @@ mod tests {
 
     #[test]
     fn raw_value() {
-        // TODO: Fix this test. How do you get at the value contained in the Option?
+        // TODO: Fix this test. How do you get at the value contained in the
+        // Option?
         let icecreams = maybe_icecream(12);
         assert_eq!(icecreams, Some(0));
     }

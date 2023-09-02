@@ -1,6 +1,10 @@
-# Solutions to rustlings 🦀❤️
+<div class="oranda-hide">
 
-## Solutions to [Rustlings exercises](https://github.com/rust-lang/rustlings) for latest release v5.3.0
+# rustlings 🦀❤️
+
+</div>
+
+Greetings and welcome to `rustlings`. This project contains small exercises to get you used to reading and writing Rust code. This includes reading and responding to compiler messages!
 
 ### Topic wise solutions:
 
