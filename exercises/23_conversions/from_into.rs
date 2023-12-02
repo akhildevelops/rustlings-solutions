@@ -55,7 +55,7 @@ impl From<&str> for Person {
 
 impl From<Vec<String>> for Person {
     fn from(s: Vec<String>) -> Self {
-        if s.len() != 2 {
+        if s.len() < 2 {
             return Person::default();
         }
         let number = s[1].parse();

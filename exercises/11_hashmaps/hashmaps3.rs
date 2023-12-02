@@ -48,7 +48,6 @@ fn build_scores_table(results: String) -> HashMap<String, Team> {
                 scores.insert(
                     team_score.0.clone(),
                     Team {
-                        name: team_score.0,
                         goals_scored: team_score.1,
                         goals_conceded: team_score.2,
                     },
