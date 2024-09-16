@@ -1,7 +1,6 @@
-// options2.rs
-//
-// Execute `rustlings hint options2` or use the `hint` watch subcommand for a
-// hint.
+fn main() {
+    // You can optionally experiment here.
+}
 
 #[cfg(test)]
 mod tests {
@@ -21,7 +20,7 @@ mod tests {
         let range = 10;
         let mut optional_integers: Vec<Option<i8>> = vec![None];
 
-        for i in 1..(range + 1) {
+        for i in 1..=range {
             optional_integers.push(Some(i));
         }
         let mut cursor = range;

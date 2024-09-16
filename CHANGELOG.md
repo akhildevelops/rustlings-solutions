@@ -1,4 +1,157 @@
+<a name="6.3.0"></a>
+
+## 6.3.0 (2024-08-29)
+
+### Added
+
+- Add the following exercise lints:
+  - `forbid(unsafe_code)`: You shouldn't write unsafe code in Rustlings.
+  - `forbid(unstable_features)`: You don't need unstable features in Rustlings and shouldn't rely on them while learning Rust.
+  - `forbid(todo)`: You forgot a `todo!()`.
+  - `forbid(empty_loop)`: This can only happen by mistake in Rustlings.
+  - `deny(infinite_loop)`: No infinite loops are needed in Rustlings.
+  - `deny(mem_forget)`: You shouldn't leak memory while still learning Rust.
+- Show a link to every exercise file in the list.
+- Add scroll padding in the list.
+- Break the help footer of the list into two lines when the terminal width isn't big enough.
+- Enable scrolling with the mouse in the list.
+- `dev check`: Show the progress of checks.
+- `dev check`: Check that the length of all exercise names is lower than 32.
+- `dev check`: Check if exercise contains no tests and isn't marked with `test = false`.
+
+### Changed
+
+- The compilation time when installing Rustlings is reduced.
+- Pressing `c` in the list for "continue on" now quits the list after setting the selected exercise as the current one.
+- Better highlighting of the solution file after an exercise is done.
+- Don't show the output of successful tests anymore. Instead, show the pretty output for tests.
+- Be explicit about `q` only quitting the list and not the whole program in the list.
+- Be explicit about `r` only resetting one exercise (the selected one) in the list.
+- Ignore the standard output of `git init`.
+- `threads3`: Remove the queue length and improve tests.
+- `errors4`: Use match instead of a comparison chain in the solution.
+- `functions3`: Only take `u8` to avoid using a too high number of iterations by mistake.
+- `dev check`: Always check with strict Clippy (warnings to errors) when checking the solutions.
+
+### Fixed
+
+- Fix the error on some systems about too many open files during the final check of all exercises.
+- Fix the list when the terminal height is too low.
+- Restore the terminal after an error in the list.
+
+<a name="6.2.0"></a>
+
+## 6.2.0 (2024-08-09)
+
+### Added
+
+- Show a message before checking and running an exercise. This gives the user instant feedback and avoids confusion if the checks take too long.
+- Show a helpful error message when trying to install Rustlings with a Rust version lower than the minimum one that Rustlings supports.
+- Add a `README.md` file to the `solutions/` directory.
+- Allow initializing Rustlings in a Cargo workspace.
+- `dev check`: Check that all solutions are formatted with `rustfmt`.
+
+### Changed
+
+- Remove the state file and the solutions directory from the generated `.gitignore` file.
+- Run the final check of all exercises in parallel.
+- Small exercise improvements.
+
+<a name="6.1.0"></a>
+
+## 6.1.0 (2024-07-10)
+
+#### Added
+
+- `dev check`: Check that all exercises (including third-party ones) include at least one `TODO` comment.
+- `dev check`: Check that all exercises actually fail to run (not already solved).
+
+#### Changed
+
+- Make enum variants more consistent between enum exercises.
+- `iterators3`: Teach about the possible case of integer overflow during division.
+
+#### Fixed
+
+- Exit with a helpful error message on missing/unsupported terminal/TTY.
+- Mark the last exercise as done.
+
+<a name="6.0.1"></a>
+
+## 6.0.1 (2024-07-04)
+
+Small exercise improvements and fixes.
+Most importantly, fixed that the exercise `clippy1` was already solved 😅
+
+<a name="6.0.0"></a>
+
+## 6.0.0 (2024-07-03)
+
+This release is the result of a complete rewrite to deliver a ton of new features and improvements ✨
+The most important changes are highlighted below.
+
+### Installation
+
+The installation has been simplified a lot!
+To install Rustlings after installing Rust, all what you need to do now is running the following command:
+
+```bash
+cargo install rustlings
+```
+
+Yes, this means that Rustlings is now on [crates.io](https://crates.io/crates/rustlings) 🎉
+
+You can read about the motivations of this change in [this issue](https://github.com/rust-lang/rustlings/issues/1919).
+
+### UI/UX
+
+- The UI is now responsive when the terminal is resized.
+- The progress bar was moved to the bottom so that you can always see your progress and the current exercise to work on.
+- The current exercise path is now a terminal link. It will open the exercise file in your default editor when you click on it.
+- A small prompt is now always shown at the bottom. It allows you to choose an action by entering a character. For example, entering `h` will show you the hint of the current exercise.
+- The comment "I AM NOT DONE!" doesn't exist anymore. Instead of needing to remove it to go to the next exercise, you need to enter `n` in the terminal.
+
+### List mode
+
+A list mode was added using [Ratatui](https://ratatui.rs).
+You can enter it by entering `l` in the watch mode.
+It offers the following features:
+
+- Browse all exercises and see their state (pending/done).
+- Filter exercises based on their state (pending/done).
+- Continue at another exercise. This allows you to skip some exercises or go back to previous ones.
+- Reset an exercise so you can start over and revert your changes.
+
+### Solutions
+
+After finishing an exercise, a solution file will be available and Rustlings will show you its path in green.
+This allows you to compare your solution with an idiomatic solution and maybe learn about other ways to solve a problem.
+
+While writing the solutions, all exercises have been polished 🌟
+For example, every exercise now contains `TODO` comments to highlight what the user needs to change and where.
+
+### LSP support out of the box
+
+Instead of creating a `project.json` file using `rustlings lsp`, Rustlings now works with a `Cargo.toml` file out of the box.
+No actions are needed to activate the language server `rust-analyzer`.
+
+This should avoid issues related to the language server or to running exercises, especially the ones with Clippy.
+
+### Clippy
+
+Clippy lints are now shown on all exercises, not only the Clippy exercises 📎
+Make Clippy your friend from early on 🥰
+
+### Third-party exercises
+
+Rustlings now supports third-party exercises!
+
+Do you want to create your own set of Rustlings exercises to focus on some specific topic?
+Or do you want to translate the original Rustlings exercises?
+Then follow the link to the guide about [third-party exercises](THIRD_PARTY_EXERCISES.md)!
+
 <a name="5.6.1"></a>
+
 ## 5.6.1 (2023-09-18)
 
 #### Changed
@@ -15,6 +168,7 @@
 - `enums3`: Fixed formatting with `rustfmt`.
 
 <a name="5.6.0"></a>
+
 ## 5.6.0 (2023-09-04)
 
 #### Added
@@ -30,7 +184,7 @@
 - Swapped the order of threads and smart pointer exercises.
 - Rewrote the CLI to use `clap` - it's matured much since we switched to `argh` :)
 - `structs3`: Switched from i32 to u32.
-- `move_semantics`: Switched 1-4 to tests, and rewrote them to be way simpler, while still teaching about the same 
+- `move_semantics`: Switched 1-4 to tests, and rewrote them to be way simpler, while still teaching about the same
   concepts.
 
 #### Fixed
@@ -55,6 +209,7 @@
 - Improved CI workflows, we're now testing on multiple platforms at once.
 
 <a name="5.5.1"></a>
+
 ## 5.5.1 (2023-05-17)
 
 #### Fixed
@@ -62,6 +217,7 @@
 - Reverted `rust-project.json` path generation due to an upstream `rust-analyzer` fix.
 
 <a name="5.5.0"></a>
+
 ## 5.5.0 (2023-05-17)
 
 #### Added
@@ -97,6 +253,7 @@
 - Split quick installation section into two code blocks
 
 <a name="5.4.1"></a>
+
 ## 5.4.1 (2023-03-10)
 
 #### Changed
@@ -167,7 +324,7 @@
 - **structs3**: Clarifed the hint
 - **quiz2, as_ref_mut, options1, traits1, traits2**: Clarified hints
 - **traits1, traits2, cli**: Tidied up unmatching backticks
-- **enums2**: Removed unneccessary indirection of self
+- **enums2**: Removed unnecessary indirection of self
 - **enums3**: Added an extra tuple comment
 
 #### Housekeeping

@@ -1,5 +1,3 @@
-// as_ref_mut.rs
-//
 // AsRef and AsMut allow for cheap reference-to-reference conversions. Read more
 // about them at https://doc.rust-lang.org/std/convert/trait.AsRef.html and
 // https://doc.rust-lang.org/std/convert/trait.AsMut.html, respectively.
@@ -24,6 +22,8 @@ fn char_counter<T: AsRef<str>>(arg: T) -> usize {
 fn num_sq<T: AsMut<u32>>(arg: &mut T) {
     *arg.as_mut() *= *arg.as_mut()
 }
+
+fn main() {}
 
 #[cfg(test)]
 mod tests {

@@ -1,269 +1,182 @@
-use assert_cmd::prelude::*;
-use glob::glob;
-use predicates::boolean::PredicateBooleanExt;
-use std::fs::File;
-use std::io::Read;
-use std::process::Command;
+use std::{
+    env::{self, consts::EXE_SUFFIX},
+    process::{Command, Stdio},
+    str::from_utf8,
+};
 
-#[test]
-fn runs_without_arguments() {
-    let mut cmd = Command::cargo_bin("rustlings").unwrap();
-    cmd.assert().success();
+enum Output<'a> {
+    FullStdout(&'a str),
+    PartialStdout(&'a str),
+    PartialStderr(&'a str),
 }
 
-#[test]
-fn fails_when_in_wrong_dir() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .current_dir("tests/")
-        .assert()
-        .code(1);
+use Output::*;
+
+#[derive(Default)]
+struct Cmd<'a> {
+    current_dir: Option<&'a str>,
+    args: &'a [&'a str],
+    output: Option<Output<'a>>,
 }
 
-#[test]
-fn verify_all_success() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .arg("verify")
-        .current_dir("tests/fixture/success")
-        .assert()
-        .success();
-}
+impl<'a> Cmd<'a> {
+    #[inline]
+    fn current_dir(&mut self, current_dir: &'a str) -> &mut Self {
+        self.current_dir = Some(current_dir);
+        self
+    }
 
-#[test]
-fn verify_fails_if_some_fails() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .arg("verify")
-        .current_dir("tests/fixture/failure")
-        .assert()
-        .code(1);
-}
+    #[inline]
+    fn args(&mut self, args: &'a [&'a str]) -> &mut Self {
+        self.args = args;
+        self
+    }
 
-#[test]
-fn run_single_compile_success() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["run", "compSuccess"])
-        .current_dir("tests/fixture/success/")
-        .assert()
-        .success();
-}
+    #[inline]
+    fn output(&mut self, output: Output<'a>) -> &mut Self {
+        self.output = Some(output);
+        self
+    }
 
-#[test]
-fn run_single_compile_failure() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["run", "compFailure"])
-        .current_dir("tests/fixture/failure/")
-        .assert()
-        .code(1);
-}
+    fn assert(&self, success: bool) {
+        let rustlings_bin = {
+            let mut path = env::current_exe().unwrap();
+            // Pop test binary name
+            path.pop();
+            // Pop `/deps`
+            path.pop();
 
-#[test]
-fn run_single_test_success() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["run", "testSuccess"])
-        .current_dir("tests/fixture/success/")
-        .assert()
-        .success();
-}
-
-#[test]
-fn run_single_test_failure() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["run", "testFailure"])
-        .current_dir("tests/fixture/failure/")
-        .assert()
-        .code(1);
-}
-
-#[test]
-fn run_single_test_not_passed() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["run", "testNotPassed.rs"])
-        .current_dir("tests/fixture/failure/")
-        .assert()
-        .code(1);
-}
-
-#[test]
-fn run_single_test_no_filename() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .arg("run")
-        .current_dir("tests/fixture/")
-        .assert()
-        .code(2)
-        .stderr(predicates::str::contains(
-            "required arguments were not provided",
-        ));
-}
-
-#[test]
-fn run_single_test_no_exercise() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["run", "compNoExercise.rs"])
-        .current_dir("tests/fixture/failure")
-        .assert()
-        .code(1);
-}
-
-#[test]
-fn reset_single_exercise() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["reset", "intro1"])
-        .assert()
-        .code(0);
-}
-
-#[test]
-fn reset_no_exercise() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .arg("reset")
-        .assert()
-        .code(2)
-        .stderr(predicates::str::contains(
-            "required arguments were not provided",
-        ));
-}
-
-#[test]
-fn get_hint_for_single_test() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["hint", "testFailure"])
-        .current_dir("tests/fixture/failure")
-        .assert()
-        .code(0)
-        .stdout("Hello!\n");
-}
-
-#[test]
-fn all_exercises_require_confirmation() {
-    for exercise in glob("exercises/**/*.rs").unwrap() {
-        let path = exercise.unwrap();
-        if path.file_name().unwrap() == "mod.rs" {
-            continue;
-        }
-        let source = {
-            let mut file = File::open(&path).unwrap();
-            let mut s = String::new();
-            file.read_to_string(&mut s).unwrap();
-            s
+            path.push("rustlings");
+            let mut path = path.into_os_string();
+            path.push(EXE_SUFFIX);
+            path
         };
-        source
-            .matches("// I AM NOT DONE")
-            .next()
-            .unwrap_or_else(|| {
-                panic!(
-                    "There should be an `I AM NOT DONE` annotation in {:?}",
-                    path
-                )
-            });
+
+        let mut cmd = Command::new(rustlings_bin);
+
+        if let Some(current_dir) = self.current_dir {
+            cmd.current_dir(current_dir);
+        }
+
+        cmd.args(self.args).stdin(Stdio::null());
+
+        let status = match self.output {
+            None => cmd
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .unwrap(),
+            Some(FullStdout(stdout)) => {
+                let output = cmd.stderr(Stdio::null()).output().unwrap();
+                assert_eq!(from_utf8(&output.stdout).unwrap(), stdout);
+                output.status
+            }
+            Some(PartialStdout(stdout)) => {
+                let output = cmd.stderr(Stdio::null()).output().unwrap();
+                assert!(from_utf8(&output.stdout).unwrap().contains(stdout));
+                output.status
+            }
+            Some(PartialStderr(stderr)) => {
+                let output = cmd.stdout(Stdio::null()).output().unwrap();
+                assert!(from_utf8(&output.stderr).unwrap().contains(stderr));
+                output.status
+            }
+        };
+
+        assert_eq!(status.success(), success, "{cmd:?}");
+    }
+
+    #[inline]
+    fn success(&self) {
+        self.assert(true);
+    }
+
+    #[inline]
+    fn fail(&self) {
+        self.assert(false);
     }
 }
 
 #[test]
-fn run_compile_exercise_does_not_prompt() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["run", "pending_exercise"])
-        .current_dir("tests/fixture/state")
-        .assert()
-        .code(0)
-        .stdout(predicates::str::contains("I AM NOT DONE").not());
-}
-
-#[test]
-fn run_test_exercise_does_not_prompt() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["run", "pending_test_exercise"])
-        .current_dir("tests/fixture/state")
-        .assert()
-        .code(0)
-        .stdout(predicates::str::contains("I AM NOT DONE").not());
-}
-
-#[test]
-fn run_single_test_success_with_output() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["--nocapture", "run", "testSuccess"])
-        .current_dir("tests/fixture/success/")
-        .assert()
-        .code(0)
-        .stdout(predicates::str::contains("THIS TEST TOO SHALL PASS"));
-}
-
-#[test]
-fn run_single_test_success_without_output() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["run", "testSuccess"])
-        .current_dir("tests/fixture/success/")
-        .assert()
-        .code(0)
-        .stdout(predicates::str::contains("THIS TEST TOO SHALL PASS").not());
-}
-
-#[test]
-fn run_rustlings_list() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["list"])
-        .current_dir("tests/fixture/success")
-        .assert()
+fn run_compilation_success() {
+    Cmd::default()
+        .current_dir("tests/test_exercises")
+        .args(&["run", "compilation_success"])
         .success();
 }
 
 #[test]
-fn run_rustlings_list_no_pending() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["list"])
-        .current_dir("tests/fixture/success")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains("Pending").not());
+fn run_compilation_failure() {
+    Cmd::default()
+        .current_dir("tests/test_exercises")
+        .args(&["run", "compilation_failure"])
+        .fail();
 }
 
 #[test]
-fn run_rustlings_list_both_done_and_pending() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["list"])
-        .current_dir("tests/fixture/state")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains("Done").and(predicates::str::contains("Pending")));
+fn run_test_success() {
+    Cmd::default()
+        .current_dir("tests/test_exercises")
+        .args(&["run", "test_success"])
+        .output(PartialStdout("\nOutput from `main` function\n"))
+        .success();
 }
 
 #[test]
-fn run_rustlings_list_without_pending() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["list", "--solved"])
-        .current_dir("tests/fixture/state")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains("Pending").not());
+fn run_test_failure() {
+    Cmd::default()
+        .current_dir("tests/test_exercises")
+        .args(&["run", "test_failure"])
+        .fail();
 }
 
 #[test]
-fn run_rustlings_list_without_done() {
-    Command::cargo_bin("rustlings")
-        .unwrap()
-        .args(["list", "--unsolved"])
-        .current_dir("tests/fixture/state")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains("Done").not());
+fn run_exercise_not_in_info() {
+    Cmd::default()
+        .current_dir("tests/test_exercises")
+        .args(&["run", "not_in_info"])
+        .fail();
+}
+
+#[test]
+fn reset_without_exercise_name() {
+    Cmd::default().args(&["reset"]).fail();
+}
+
+#[test]
+fn hint() {
+    Cmd::default()
+        .current_dir("tests/test_exercises")
+        .args(&["hint", "test_failure"])
+        .output(FullStdout("The answer to everything: 42\n"))
+        .success();
+}
+
+#[test]
+fn init() {
+    let test_dir = tempfile::TempDir::new().unwrap();
+    let test_dir = test_dir.path().to_str().unwrap();
+
+    Cmd::default().current_dir(test_dir).fail();
+
+    Cmd::default()
+        .current_dir(test_dir)
+        .args(&["init"])
+        .success();
+
+    // Running `init` after a successful initialization.
+    Cmd::default()
+        .current_dir(test_dir)
+        .args(&["init"])
+        .output(PartialStderr("`cd rustlings`"))
+        .fail();
+
+    let initialized_dir = format!("{test_dir}/rustlings");
+
+    // Running `init` in the initialized directory.
+    Cmd::default()
+        .current_dir(&initialized_dir)
+        .args(&["init"])
+        .output(PartialStderr("already initialized"))
+        .fail();
 }
