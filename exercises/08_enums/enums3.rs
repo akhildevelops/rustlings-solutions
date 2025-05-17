@@ -17,14 +17,6 @@ struct Point {
     y: u64,
 }
 
-enum Message {
-    Resize { width: u64, height: u64 },
-    Move(Point),
-    Echo(String),
-    ChangeColor(u8, u8, u8),
-    Quit,
-}
-
 struct State {
     width: u64,
     height: u64,

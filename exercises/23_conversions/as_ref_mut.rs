@@ -8,7 +8,7 @@
 // Obtain the number of bytes (not characters) in the given argument
 // (`.len()` returns the number of bytes in a string).
 // TODO: Add the `AsRef` trait appropriately as a trait bound.
-fn byte_counter<T>(arg: T) -> usize {
+fn byte_counter<T: AsRef<[u8]>>(arg: T) -> usize {
     arg.as_ref().len()
 }
 
