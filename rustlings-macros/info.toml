@@ -122,7 +122,7 @@ dir = "01_variables"
 test = false
 hint = """
 We know about variables and mutability, but there is another important type of
-variables available: constants.
+variable available: constants.
 
 Constants are always immutable. They are declared with the keyword `const`
 instead of `let`.
@@ -575,12 +575,8 @@ https://doc.rust-lang.org/book/ch08-03-hash-maps.html#only-inserting-a-value-if-
 name = "hashmaps3"
 dir = "11_hashmaps"
 hint = """
-Hint 1: Use the `entry()` and `or_insert()` (or `or_insert_with()`) methods of
-        `HashMap` to insert the default value of `TeamScores` if a team doesn't
-        exist in the table yet.
-
-Learn more in The Book:
-https://doc.rust-lang.org/book/ch08-03-hash-maps.html#only-inserting-a-value-if-the-key-has-no-value
+Hint 1: Use the `entry()` and `or_default()` methods of `HashMap` to insert the
+        default value of `TeamScores` if a team doesn't exist in the table yet.
 
 Hint 2: If there is already an entry for a given key, the value returned by
         `entry()` can be updated based on the existing value.
@@ -768,7 +764,7 @@ Notice how the trait takes ownership of `self` and returns `Self`.
 
 Although the signature of `append_bar` in the trait takes `self` as argument,
 the implementation can take `mut self` instead. This is possible because the
-the value is owned anyway."""
+value is owned anyway."""
 
 [[exercises]]
 name = "traits3"
@@ -1144,7 +1140,7 @@ constants, but clippy recognizes those imprecise mathematical constants as a
 source of potential error.
 
 See the suggestions of the Clippy warning in the compile output and use the
-appropriate replacement constant from `std::f32::consts`..."""
+appropriate replacement constant from `std::f32::consts`."""
 
 [[exercises]]
 name = "clippy2"

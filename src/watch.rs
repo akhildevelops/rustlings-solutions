@@ -1,13 +1,12 @@
-use anyhow::{Context, Error, Result};
-use notify_debouncer_mini::{
-    new_debouncer,
-    notify::{self, RecursiveMode},
-};
+use anyhow::{Error, Result};
+use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 use std::{
     io::{self, Write},
     path::Path,
-    sync::mpsc::channel,
-    thread,
+    sync::{
+        atomic::{AtomicBool, Ordering::Relaxed},
+        mpsc::channel,
+    },
     time::Duration,
 };
 
@@ -16,15 +15,32 @@ use crate::{
     list,
 };
 
-use self::{
-    notify_event::NotifyEventHandler,
-    state::WatchState,
-    terminal_event::{terminal_event_handler, InputEvent},
-};
+use self::{notify_event::NotifyEventHandler, state::WatchState, terminal_event::InputEvent};
 
 mod notify_event;
 mod state;
 mod terminal_event;
+
+static EXERCISE_RUNNING: AtomicBool = AtomicBool::new(false);
+
+// Private unit type to force using the constructor function.
+#[must_use = "When the guard is dropped, the input is unpaused"]
+pub struct InputPauseGuard(());
+
+impl InputPauseGuard {
+    #[inline]
+    pub fn scoped_pause() -> Self {
+        EXERCISE_RUNNING.store(true, Relaxed);
+        Self(())
+    }
+}
+
+impl Drop for InputPauseGuard {
+    #[inline]
+    fn drop(&mut self) {
+        EXERCISE_RUNNING.store(false, Relaxed);
+    }
+}
 
 enum WatchEvent {
     Input(InputEvent),
@@ -47,54 +63,60 @@ fn run_watch(
     app_state: &mut AppState,
     notify_exercise_names: Option<&'static [&'static [u8]]>,
 ) -> Result<WatchExit> {
-    let (tx, rx) = channel();
+    let (watch_event_sender, watch_event_receiver) = channel();
 
     let mut manual_run = false;
     // Prevent dropping the guard until the end of the function.
     // Otherwise, the file watcher exits.
-    let _debouncer_guard = if let Some(exercise_names) = notify_exercise_names {
-        let mut debouncer = new_debouncer(
-            Duration::from_millis(200),
-            NotifyEventHandler {
-                tx: tx.clone(),
-                exercise_names,
-            },
+    let _watcher_guard = if let Some(exercise_names) = notify_exercise_names {
+        let notify_event_handler =
+            NotifyEventHandler::build(watch_event_sender.clone(), exercise_names)?;
+
+        let mut watcher = RecommendedWatcher::new(
+            notify_event_handler,
+            Config::default()
+                .with_follow_symlinks(false)
+                .with_poll_interval(Duration::from_secs(1)),
         )
         .inspect_err(|_| eprintln!("{NOTIFY_ERR}"))?;
-        debouncer
-            .watcher()
+
+        watcher
             .watch(Path::new("exercises"), RecursiveMode::Recursive)
             .inspect_err(|_| eprintln!("{NOTIFY_ERR}"))?;
 
-        Some(debouncer)
+        Some(watcher)
     } else {
         manual_run = true;
         None
     };
 
-    let mut watch_state = WatchState::build(app_state, manual_run)?;
-
+    let mut watch_state = WatchState::build(app_state, watch_event_sender, manual_run)?;
     let mut stdout = io::stdout().lock();
+
     watch_state.run_current_exercise(&mut stdout)?;
 
-    thread::Builder::new()
-        .spawn(move || terminal_event_handler(tx, manual_run))
-        .context("Failed to spawn a thread to handle terminal events")?;
-
-    while let Ok(event) = rx.recv() {
+    while let Ok(event) = watch_event_receiver.recv() {
         match event {
             WatchEvent::Input(InputEvent::Next) => match watch_state.next_exercise(&mut stdout)? {
                 ExercisesProgress::AllDone => break,
                 ExercisesProgress::NewPending => watch_state.run_current_exercise(&mut stdout)?,
                 ExercisesProgress::CurrentPending => (),
             },
+            WatchEvent::Input(InputEvent::Run) => watch_state.run_current_exercise(&mut stdout)?,
             WatchEvent::Input(InputEvent::Hint) => watch_state.show_hint(&mut stdout)?,
             WatchEvent::Input(InputEvent::List) => return Ok(WatchExit::List),
+            WatchEvent::Input(InputEvent::CheckAll) => match watch_state
+                .check_all_exercises(&mut stdout)?
+            {
+                ExercisesProgress::AllDone => break,
+                ExercisesProgress::NewPending => watch_state.run_current_exercise(&mut stdout)?,
+                ExercisesProgress::CurrentPending => watch_state.render(&mut stdout)?,
+            },
+            WatchEvent::Input(InputEvent::Reset) => watch_state.reset_exercise(&mut stdout)?,
             WatchEvent::Input(InputEvent::Quit) => {
                 stdout.write_all(QUIT_MSG)?;
                 break;
             }
-            WatchEvent::Input(InputEvent::Run) => watch_state.run_current_exercise(&mut stdout)?,
             WatchEvent::FileChange { exercise_ind } => {
                 watch_state.handle_file_change(exercise_ind, &mut stdout)?;
             }
@@ -154,8 +176,9 @@ pub fn watch(
 }
 
 const QUIT_MSG: &[u8] = b"
+
 We hope you're enjoying learning Rust!
-If you want to continue working on the exercises at a later point, you can simply run `rustlings` again.
+If you want to continue working on the exercises at a later point, you can simply run `rustlings` again in this directory.
 ";
 
 const NOTIFY_ERR: &str = "

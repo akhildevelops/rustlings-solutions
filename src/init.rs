@@ -1,7 +1,7 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use crossterm::{
-    style::{Attribute, Color, ResetColor, SetAttribute, SetForegroundColor},
     QueueableCommand,
+    style::{Attribute, Color, ResetColor, SetAttribute, SetForegroundColor},
 };
 use serde::Deserialize;
 use std::{
@@ -57,7 +57,9 @@ pub fn init() -> Result<()> {
         if !workspace_manifest_content.contains("[workspace]\n")
             && !workspace_manifest_content.contains("workspace.")
         {
-            bail!("The current directory is already part of a Cargo project.\nPlease initialize Rustlings in a different directory");
+            bail!(
+                "The current directory is already part of a Cargo project.\nPlease initialize Rustlings in a different directory"
+            );
         }
 
         stdout.write_all(b"This command will create the directory `rustlings/` as a member of this Cargo workspace.\nPress ENTER to continue ")?;
@@ -75,7 +77,9 @@ pub fn init() -> Result<()> {
             .stdout(Stdio::null())
             .status()?;
         if !status.success() {
-            bail!("Failed to initialize a new Cargo workspace member.\nPlease initialize Rustlings in a different directory");
+            bail!(
+                "Failed to initialize a new Cargo workspace member.\nPlease initialize Rustlings in a different directory"
+            );
         }
 
         stdout.write_all(b"The directory `rustlings` has been added to `workspace.members` in the `Cargo.toml` file of this Cargo workspace.\n")?;
@@ -130,6 +134,9 @@ pub fn init() -> Result<()> {
     fs::write("Cargo.toml", updated_cargo_toml)
         .context("Failed to create the file `rustlings/Cargo.toml`")?;
 
+    fs::write("rust-analyzer.toml", RUST_ANALYZER_TOML)
+        .context("Failed to create the file `rustlings/rust-analyzer.toml`")?;
+
     fs::write(".gitignore", GITIGNORE)
         .context("Failed to create the file `rustlings/.gitignore`")?;
 
@@ -168,6 +175,11 @@ const INIT_SOLUTION_FILE: &[u8] = b"fn main() {
     // It will be automatically filled after you finish the exercise.
 }
 ";
+
+pub const RUST_ANALYZER_TOML: &[u8] = br#"check.command = "clippy"
+check.extraArgs = ["--profile", "test"]
+cargo.targetDir = true
+"#;
 
 const GITIGNORE: &[u8] = b"Cargo.lock
 target/

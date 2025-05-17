@@ -1,9 +1,11 @@
 use anyhow::{Context, Result};
 use crossterm::{
-    cursor::{MoveTo, MoveToNextLine},
-    style::{Attribute, Color, ResetColor, SetAttribute, SetBackgroundColor, SetForegroundColor},
-    terminal::{self, BeginSynchronizedUpdate, Clear, ClearType, EndSynchronizedUpdate},
     QueueableCommand,
+    cursor::{MoveTo, MoveToNextLine},
+    style::{
+        Attribute, Attributes, Color, ResetColor, SetAttribute, SetAttributes, SetForegroundColor,
+    },
+    terminal::{self, BeginSynchronizedUpdate, Clear, ClearType, EndSynchronizedUpdate},
 };
 use std::{
     fmt::Write as _,
@@ -13,12 +15,15 @@ use std::{
 use crate::{
     app_state::AppState,
     exercise::Exercise,
-    term::{progress_bar, CountedWrite, MaxLenWriter},
+    term::{CountedWrite, MaxLenWriter, progress_bar},
 };
 
 use super::scroll_state::ScrollState;
 
 const COL_SPACING: usize = 2;
+const SELECTED_ROW_ATTRIBUTES: Attributes = Attributes::none()
+    .with(Attribute::Reverse)
+    .with(Attribute::Bold);
 
 fn next_ln(stdout: &mut StdoutLock) -> io::Result<()> {
     stdout
@@ -41,6 +46,7 @@ pub struct ListState<'a> {
     app_state: &'a mut AppState,
     scroll_state: ScrollState,
     name_col_padding: Vec<u8>,
+    path_col_padding: Vec<u8>,
     filter: Filter,
     term_width: u16,
     term_height: u16,
@@ -52,13 +58,18 @@ impl<'a> ListState<'a> {
         stdout.queue(Clear(ClearType::All))?;
 
         let name_col_title_len = 4;
-        let name_col_width = app_state
-            .exercises()
-            .iter()
-            .map(|exercise| exercise.name.len())
-            .max()
-            .map_or(name_col_title_len, |max| max.max(name_col_title_len));
+        let path_col_title_len = 4;
+        let (name_col_width, path_col_width) = app_state.exercises().iter().fold(
+            (name_col_title_len, path_col_title_len),
+            |(name_col_width, path_col_width), exercise| {
+                (
+                    name_col_width.max(exercise.name.len()),
+                    path_col_width.max(exercise.path.len()),
+                )
+            },
+        );
         let name_col_padding = vec![b' '; name_col_width + COL_SPACING];
+        let path_col_padding = vec![b' '; path_col_width];
 
         let filter = Filter::None;
         let n_rows_with_filter = app_state.exercises().len();
@@ -73,6 +84,7 @@ impl<'a> ListState<'a> {
             app_state,
             scroll_state,
             name_col_padding,
+            path_col_padding,
             filter,
             // Set by `set_term_size`
             term_width: 0,
@@ -105,6 +117,28 @@ impl<'a> ListState<'a> {
         );
     }
 
+    fn draw_exercise_name(&self, writer: &mut MaxLenWriter, exercise: &Exercise) -> io::Result<()> {
+        if !self.search_query.is_empty() {
+            if let Some((pre_highlight, highlight, post_highlight)) = exercise
+                .name
+                .find(&self.search_query)
+                .and_then(|ind| exercise.name.split_at_checked(ind))
+                .and_then(|(pre_highlight, rest)| {
+                    rest.split_at_checked(self.search_query.len())
+                        .map(|x| (pre_highlight, x.0, x.1))
+                })
+            {
+                writer.write_str(pre_highlight)?;
+                writer.stdout.queue(SetForegroundColor(Color::Magenta))?;
+                writer.write_str(highlight)?;
+                writer.stdout.queue(SetForegroundColor(Color::Reset))?;
+                return writer.write_str(post_highlight);
+            }
+        }
+
+        writer.write_str(exercise.name)
+    }
+
     fn draw_rows(
         &self,
         stdout: &mut StdoutLock,
@@ -121,14 +155,12 @@ impl<'a> ListState<'a> {
             let mut writer = MaxLenWriter::new(stdout, self.term_width as usize);
 
             if self.scroll_state.selected() == Some(row_offset + n_displayed_rows) {
-                writer.stdout.queue(SetBackgroundColor(Color::Rgb {
-                    r: 40,
-                    g: 40,
-                    b: 40,
-                }))?;
                 // The crab emoji has the width of two ascii chars.
                 writer.add_to_len(2);
                 writer.stdout.write_all("🦀".as_bytes())?;
+                writer
+                    .stdout
+                    .queue(SetAttributes(SELECTED_ROW_ATTRIBUTES))?;
             } else {
                 writer.write_ascii(b"  ")?;
             }
@@ -142,15 +174,16 @@ impl<'a> ListState<'a> {
 
             if exercise.done {
                 writer.stdout.queue(SetForegroundColor(Color::Green))?;
-                writer.write_ascii(b"DONE     ")?;
+                writer.write_ascii(b"DONE   ")?;
             } else {
                 writer.stdout.queue(SetForegroundColor(Color::Yellow))?;
-                writer.write_ascii(b"PENDING  ")?;
+                writer.write_ascii(b"PENDING")?;
             }
-
             writer.stdout.queue(SetForegroundColor(Color::Reset))?;
+            writer.write_ascii(b"  ")?;
 
-            writer.write_str(exercise.name)?;
+            self.draw_exercise_name(&mut writer, exercise)?;
+
             writer.write_ascii(&self.name_col_padding[exercise.name.len()..])?;
 
             // The list links aren't shown correctly in VS Code on Windows.
@@ -160,6 +193,8 @@ impl<'a> ListState<'a> {
             } else {
                 exercise.terminal_file_link(&mut writer)?;
             }
+
+            writer.write_ascii(&self.path_col_padding[exercise.path.len()..])?;
 
             next_ln(stdout)?;
             stdout.queue(ResetColor)?;

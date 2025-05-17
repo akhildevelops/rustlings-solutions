@@ -17,7 +17,7 @@ struct TeamScores {
 
 fn build_scores_table(results: &str) -> HashMap<&str, TeamScores> {
     // The name of the team is the key and its associated struct is the value.
-    let mut scores = HashMap::new();
+    let mut scores = HashMap::<&str, TeamScores>::new();
 
     for line in results.lines() {
         let mut split_iterator = line.split(',');
@@ -28,17 +28,13 @@ fn build_scores_table(results: &str) -> HashMap<&str, TeamScores> {
         let team_2_score: u8 = split_iterator.next().unwrap().parse().unwrap();
 
         // Insert the default with zeros if a team doesn't exist yet.
-        let team_1 = scores
-            .entry(team_1_name)
-            .or_insert_with(TeamScores::default);
+        let team_1 = scores.entry(team_1_name).or_default();
         // Update the values.
         team_1.goals_scored += team_1_score;
         team_1.goals_conceded += team_2_score;
 
         // Similarly for the second team.
-        let team_2 = scores
-            .entry(team_2_name)
-            .or_insert_with(TeamScores::default);
+        let team_2 = scores.entry(team_2_name).or_default();
         team_2.goals_scored += team_2_score;
         team_2.goals_conceded += team_1_score;
     }
@@ -64,9 +60,11 @@ England,Spain,1,0";
     fn build_scores() {
         let scores = build_scores_table(RESULTS);
 
-        assert!(["England", "France", "Germany", "Italy", "Poland", "Spain"]
-            .into_iter()
-            .all(|team_name| scores.contains_key(team_name)));
+        assert!(
+            ["England", "France", "Germany", "Italy", "Poland", "Spain"]
+                .into_iter()
+                .all(|team_name| scores.contains_key(team_name))
+        );
     }
 
     #[test]

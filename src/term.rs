@@ -1,23 +1,25 @@
 use crossterm::{
-    cursor::MoveTo,
-    style::{Attribute, Color, SetAttribute, SetForegroundColor},
-    terminal::{Clear, ClearType},
     Command, QueueableCommand,
+    cursor::MoveTo,
+    style::{Attribute, Color, ResetColor, SetAttribute, SetForegroundColor},
+    terminal::{Clear, ClearType},
 };
 use std::{
     fmt, fs,
     io::{self, BufRead, StdoutLock, Write},
 };
 
-pub struct MaxLenWriter<'a, 'b> {
-    pub stdout: &'a mut StdoutLock<'b>,
+use crate::app_state::CheckProgress;
+
+pub struct MaxLenWriter<'a, 'lock> {
+    pub stdout: &'a mut StdoutLock<'lock>,
     len: usize,
     max_len: usize,
 }
 
-impl<'a, 'b> MaxLenWriter<'a, 'b> {
+impl<'a, 'lock> MaxLenWriter<'a, 'lock> {
     #[inline]
-    pub fn new(stdout: &'a mut StdoutLock<'b>, max_len: usize) -> Self {
+    pub fn new(stdout: &'a mut StdoutLock<'lock>, max_len: usize) -> Self {
         Self {
             stdout,
             len: 0,
@@ -32,13 +34,13 @@ impl<'a, 'b> MaxLenWriter<'a, 'b> {
     }
 }
 
-pub trait CountedWrite<'a> {
+pub trait CountedWrite<'lock> {
     fn write_ascii(&mut self, ascii: &[u8]) -> io::Result<()>;
     fn write_str(&mut self, unicode: &str) -> io::Result<()>;
-    fn stdout(&mut self) -> &mut StdoutLock<'a>;
+    fn stdout(&mut self) -> &mut StdoutLock<'lock>;
 }
 
-impl<'a, 'b> CountedWrite<'b> for MaxLenWriter<'a, 'b> {
+impl<'lock> CountedWrite<'lock> for MaxLenWriter<'_, 'lock> {
     fn write_ascii(&mut self, ascii: &[u8]) -> io::Result<()> {
         let n = ascii.len().min(self.max_len.saturating_sub(self.len));
         if n > 0 {
@@ -63,7 +65,7 @@ impl<'a, 'b> CountedWrite<'b> for MaxLenWriter<'a, 'b> {
     }
 
     #[inline]
-    fn stdout(&mut self) -> &mut StdoutLock<'b> {
+    fn stdout(&mut self) -> &mut StdoutLock<'lock> {
         self.stdout
     }
 }
@@ -85,14 +87,86 @@ impl<'a> CountedWrite<'a> for StdoutLock<'a> {
     }
 }
 
-/// Terminal progress bar to be used when not using Ratataui.
+pub struct CheckProgressVisualizer<'a, 'lock> {
+    stdout: &'a mut StdoutLock<'lock>,
+    n_cols: usize,
+}
+
+impl<'a, 'lock> CheckProgressVisualizer<'a, 'lock> {
+    const CHECKING_COLOR: Color = Color::Blue;
+    const DONE_COLOR: Color = Color::Green;
+    const PENDING_COLOR: Color = Color::Red;
+
+    pub fn build(stdout: &'a mut StdoutLock<'lock>, term_width: u16) -> io::Result<Self> {
+        clear_terminal(stdout)?;
+        stdout.write_all("Checking all exercises…\n".as_bytes())?;
+
+        // Legend
+        stdout.write_all(b"Color of exercise number: ")?;
+        stdout.queue(SetForegroundColor(Self::CHECKING_COLOR))?;
+        stdout.write_all(b"Checking")?;
+        stdout.queue(ResetColor)?;
+        stdout.write_all(b" - ")?;
+        stdout.queue(SetForegroundColor(Self::DONE_COLOR))?;
+        stdout.write_all(b"Done")?;
+        stdout.queue(ResetColor)?;
+        stdout.write_all(b" - ")?;
+        stdout.queue(SetForegroundColor(Self::PENDING_COLOR))?;
+        stdout.write_all(b"Pending")?;
+        stdout.queue(ResetColor)?;
+        stdout.write_all(b"\n")?;
+
+        // Exercise numbers with up to 3 digits.
+        // +1 because the last column doesn't end with a whitespace.
+        let n_cols = usize::from(term_width + 1) / 4;
+
+        Ok(Self { stdout, n_cols })
+    }
+
+    pub fn update(&mut self, progresses: &[CheckProgress]) -> io::Result<()> {
+        self.stdout.queue(MoveTo(0, 2))?;
+
+        let mut exercise_num = 1;
+        for exercise_progress in progresses {
+            match exercise_progress {
+                CheckProgress::None => (),
+                CheckProgress::Checking => {
+                    self.stdout
+                        .queue(SetForegroundColor(Self::CHECKING_COLOR))?;
+                }
+                CheckProgress::Done => {
+                    self.stdout.queue(SetForegroundColor(Self::DONE_COLOR))?;
+                }
+                CheckProgress::Pending => {
+                    self.stdout.queue(SetForegroundColor(Self::PENDING_COLOR))?;
+                }
+            }
+
+            write!(self.stdout, "{exercise_num:<3}")?;
+            self.stdout.queue(ResetColor)?;
+
+            if exercise_num != progresses.len() {
+                if exercise_num % self.n_cols == 0 {
+                    self.stdout.write_all(b"\n")?;
+                } else {
+                    self.stdout.write_all(b" ")?;
+                }
+
+                exercise_num += 1;
+            }
+        }
+
+        self.stdout.flush()
+    }
+}
+
 pub fn progress_bar<'a>(
     writer: &mut impl CountedWrite<'a>,
     progress: u16,
     total: u16,
-    line_width: u16,
+    term_width: u16,
 ) -> io::Result<()> {
-    debug_assert!(total < 1000);
+    debug_assert!(total <= 999);
     debug_assert!(progress <= total);
 
     const PREFIX: &[u8] = b"Progress: [";
@@ -101,7 +175,7 @@ pub fn progress_bar<'a>(
     const WRAPPER_WIDTH: u16 = PREFIX_WIDTH + POSTFIX_WIDTH;
     const MIN_LINE_WIDTH: u16 = WRAPPER_WIDTH + 4;
 
-    if line_width < MIN_LINE_WIDTH {
+    if term_width < MIN_LINE_WIDTH {
         writer.write_ascii(b"Progress: ")?;
         // Integers are in ASCII.
         return writer.write_ascii(format!("{progress}/{total}").as_bytes());
@@ -110,7 +184,7 @@ pub fn progress_bar<'a>(
     let stdout = writer.stdout();
     stdout.write_all(PREFIX)?;
 
-    let width = line_width - WRAPPER_WIDTH;
+    let width = term_width - WRAPPER_WIDTH;
     let filled = (width * progress) / total;
 
     stdout.queue(SetForegroundColor(Color::Green))?;

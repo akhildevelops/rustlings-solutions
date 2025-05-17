@@ -1,4 +1,6 @@
-#[allow(dead_code)]
+// You can bring module paths into scopes and provide new names for them with
+// the `use` and `as` keywords.
+
 mod delicious_snacks {
     // TODO: Fix these use statements
     pub use self::fruits::PEAR as fruit;

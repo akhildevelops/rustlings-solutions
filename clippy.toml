@@ -5,12 +5,11 @@ disallowed-types = [
 ]
 
 disallowed-methods = [
-  # We use `ahash` instead of the default hasher.
-  "std::collections::HashSet::new",
-  "std::collections::HashSet::with_capacity",
   # Inefficient. Use `.queue(…)` instead.
   "crossterm::style::style",
   # Use `thread::Builder::spawn` instead and handle the error.
   "std::thread::spawn",
   "std::thread::Scope::spawn",
+  # Return `ExitCode` instead.
+  "std::process::exit",
 ]

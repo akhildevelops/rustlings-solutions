@@ -1,19 +1,19 @@
 use anyhow::Result;
 use crossterm::{
-    style::{Color, ResetColor, SetForegroundColor},
     QueueableCommand,
+    style::{Color, ResetColor, SetForegroundColor},
 };
 use std::{
     io::{self, Write},
-    process::exit,
+    process::ExitCode,
 };
 
 use crate::{
     app_state::{AppState, ExercisesProgress},
-    exercise::{solution_link_line, RunnableExercise, OUTPUT_CAPACITY},
+    exercise::{OUTPUT_CAPACITY, RunnableExercise, solution_link_line},
 };
 
-pub fn run(app_state: &mut AppState) -> Result<()> {
+pub fn run(app_state: &mut AppState) -> Result<ExitCode> {
     let exercise = app_state.current_exercise();
     let mut output = Vec::with_capacity(OUTPUT_CAPACITY);
     let success = exercise.run_exercise(Some(&mut output), app_state.cmd_runner())?;
@@ -29,7 +29,8 @@ pub fn run(app_state: &mut AppState) -> Result<()> {
             .current_exercise()
             .terminal_file_link(&mut stdout)?;
         stdout.write_all(b" with errors\n")?;
-        exit(1);
+
+        return Ok(ExitCode::FAILURE);
     }
 
     stdout.queue(SetForegroundColor(Color::Green))?;
@@ -44,7 +45,7 @@ pub fn run(app_state: &mut AppState) -> Result<()> {
         stdout.write_all(b"\n")?;
     }
 
-    match app_state.done_current_exercise(&mut stdout)? {
+    match app_state.done_current_exercise::<false>(&mut stdout)? {
         ExercisesProgress::NewPending | ExercisesProgress::CurrentPending => {
             stdout.write_all(b"Next exercise: ")?;
             app_state
@@ -55,5 +56,5 @@ pub fn run(app_state: &mut AppState) -> Result<()> {
         ExercisesProgress::AllDone => (),
     }
 
-    Ok(())
+    Ok(ExitCode::SUCCESS)
 }
