@@ -11,28 +11,27 @@
 
 // TODO: Use a `Box` in the enum definition to make the code compile.
 #[derive(PartialEq, Debug)]
-enum List<'a> {
-    Cons(i32, &'a List<'a>),
+pub enum List {
+    Cons(i32, Box<List>), // Use Box smart pointer
     Nil,
-}
-
-// TODO: Create an empty cons list.
-fn create_empty_list<'a>() -> List<'a> {
-    List::Nil
-}
-
-// TODO: Create a non-empty cons list.
-fn create_non_empty_list<'a>() -> List<'a> {
-    List::Cons(1, &List::Nil)
 }
 
 fn main() {
     println!("This is an empty cons list: {:?}", create_empty_list());
     println!(
         "This is a non-empty cons list: {:?}",
-        create_non_empty_list(),
+        create_non_empty_list()
     );
 }
+
+pub fn create_empty_list() -> List {
+    List::Nil
+}
+
+pub fn create_non_empty_list() -> List {
+    List::Cons(12, Box::new(List::Cons(42, Box::new(List::Cons(38, Box::new(List::Nil))))))
+}
+
 
 #[cfg(test)]
 mod tests {
